@@ -5,8 +5,11 @@ Sample cmake project for Hi3516DV300/Hi3156CV500/Hi3516AV300 base on SDK Hi3516C
 1.注意事项
   本工程默认Sensor为IMX335，确认板子的Sensor是否一致，如果不一致请修改CMakeLists.txt中的CMAKE_C_FLAGS.
   如果板子是单Sensor的，请将SENSOR1_TYPE也设置为SENSOR0_TYPE的Sensor（或者其他Sensor），不然会报错SENSOR1_TYPE未定义。
+  
   -DSENSOR0_TYPE=SONY_IMX335_MIPI_5M_30FPS_12BIT 
+  
   -DSENSOR1_TYPE=SONY_IMX327_MIPI_2M_30FPS_12BIT
+  
   ################# select sensor type for your sample ###############################
   ####    SONY_IMX335_MIPI_5M_30FPS_12BIT              #################
   ####    SONY_IMX335_MIPI_5M_30FPS_10BIT_WDR2TO1      #################
