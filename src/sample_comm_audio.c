@@ -16,7 +16,7 @@
 #include "sample_comm.h"
 #include "acodec.h"
 #include "audio_aac_adp.h"
-#include "audio_mp3_adp.h"
+//#include "audio_mp3_adp.h"
 
 #ifdef HI_ACODEC_TYPE_TLV320AIC31
 #include "tlv320aic31.h"
@@ -1591,7 +1591,7 @@ HI_S32 SAMPLE_COMM_AUDIO_StartAdec(ADEC_CHN AdChn, PAYLOAD_TYPE_E enType)
     ADEC_ATTR_G726_S stAdecG726;
     ADEC_ATTR_LPCM_S stAdecLpcm;
     ADEC_ATTR_AAC_S stAdecAac;
-    ADEC_ATTR_MP3_S stMp3Attr;
+    //ADEC_ATTR_MP3_S stMp3Attr;
 
     stAdecAttr.enType = enType;
     stAdecAttr.u32BufSize = 20;
@@ -1624,7 +1624,7 @@ HI_S32 SAMPLE_COMM_AUDIO_StartAdec(ADEC_CHN AdChn, PAYLOAD_TYPE_E enType)
     }
     else if (PT_MP3 == stAdecAttr.enType)
     {
-        stAdecAttr.pValue = &stMp3Attr;
+        //stAdecAttr.pValue = &stMp3Attr;
     }
     else
     {

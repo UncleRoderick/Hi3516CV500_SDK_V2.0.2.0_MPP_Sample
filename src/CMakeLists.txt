@@ -7,7 +7,6 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 
 target_link_libraries(EXEC_MPP_SAMPLE pthread dl m
-	${CMAKE_SOURCE_DIR}/lib/libmpi.a 
 	${CMAKE_SOURCE_DIR}/lib/libhdmi.a
 	${CMAKE_SOURCE_DIR}/lib/lib_hiae.a 
 	${CMAKE_SOURCE_DIR}/lib/libisp.a 
@@ -16,6 +15,7 @@ target_link_libraries(EXEC_MPP_SAMPLE pthread dl m
 	${CMAKE_SOURCE_DIR}/lib/lib_hildci.a 
 	${CMAKE_SOURCE_DIR}/lib/lib_hicalcflicker.a 
 	${CMAKE_SOURCE_DIR}/lib/lib_hiawb.a 
+	${CMAKE_SOURCE_DIR}/lib/libmpi.a 
 	${CMAKE_SOURCE_DIR}/lib/libsns_imx327.a 
 	${CMAKE_SOURCE_DIR}/lib/libsns_imx327_2l.a 
 	${CMAKE_SOURCE_DIR}/lib/libsns_imx307.a 
