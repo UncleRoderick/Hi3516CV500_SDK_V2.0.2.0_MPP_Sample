@@ -3,6 +3,7 @@ Sample cmake project for Hi3516DV300/Hi3156CV500/Hi3516AV300 base on SDK Hi3516C
 
 编译事项：
 1.注意事项
+  
   本工程默认Sensor为IMX335，确认板子的Sensor是否一致，如果不一致请修改CMakeLists.txt中的CMAKE_C_FLAGS.
   如果板子是单Sensor的，请将SENSOR1_TYPE也设置为SENSOR0_TYPE的Sensor（或者其他Sensor），不然会报错SENSOR1_TYPE未定义。
   
@@ -45,16 +46,22 @@ Sample cmake project for Hi3516DV300/Hi3156CV500/Hi3516AV300 base on SDK Hi3516C
   ####    SONY_IMX415_MIPI_8M_20FPS_12BIT              #################
 
 2.创建build目录
+  
   mkdir build
 
 3.进入build目录生成Makefile
+  
   cd build
+  
   cmake ..
   
 4.build目录编译生成可执行文件
+  
   make
   
 5.运行可执行程序
+  
   生成的可执行文件为bin目录下的EXEC_MPP_SAMPLE.
+  
   复制到板子上即可运行，运行前请确保加载ko文件。
 
