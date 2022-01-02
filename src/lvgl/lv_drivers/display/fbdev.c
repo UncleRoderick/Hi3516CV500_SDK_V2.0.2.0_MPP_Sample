@@ -92,15 +92,20 @@ static struct fb_bitfield s_r32 = {16,8,0};
 static struct fb_bitfield s_g32 = {8,8,0};
 static struct fb_bitfield s_b32 = {0,8,0};
 
+#ifdef HISPARK_LCD
+#define HIFB_WIDTH			480
+#define HIFB_HEIGHT			960
+#else
 #define HIFB_WIDTH                  1920
 #define HIFB_HEIGHT                 1080
+#endif
 
 int HIFB_Init(void)
 {
     HI_S32 i,x,y,s32Ret;
     HI_U32 u32FixScreenStride = 0;
     HIFB_ALPHA_S stAlpha={0};
-    HIFB_POINT_S stPoint = {40, 112};
+    HIFB_POINT_S stPoint = {0, 0};
 
     HI_BOOL bShow;
 

@@ -187,6 +187,27 @@ combo_dev_cfg_t MIPI_TX_1080X1920_60_CONFIG =
     .pixel_clk = 148500,
 };
 
+combo_dev_cfg_t MIPI_TX_480X960_60_CONFIG =
+{
+    .devno = 0,
+    .lane_id = {0, 1, -1, -1},
+    .output_mode = OUTPUT_MODE_DSI_VIDEO,
+    .output_format = OUT_FORMAT_RGB_24_BIT,
+    .video_mode =  BURST_MODE,
+    .sync_info = {
+        .vid_pkt_size     = 480,
+        .vid_hsa_pixels   = 20,
+        .vid_hbp_pixels   = 10,
+        .vid_hline_pixels = 530,
+        .vid_vsa_lines    = 2,
+        .vid_vbp_lines    = 14,
+        .vid_vfp_lines    = 16,
+        .vid_active_lines = 960,
+        .edpi_cmd_size = 0,
+    },
+    .phy_data_rate = 379,
+    .pixel_clk = 31546,
+};
 
 
 HI_S32 SAMPLE_COMM_VO_GetWH(VO_INTF_SYNC_E enIntfSync, HI_U32* pu32W, HI_U32* pu32H, HI_U32* pu32Frm)
@@ -384,9 +405,15 @@ HI_S32 SAMPLE_COMM_VO_GetWH(VO_INTF_SYNC_E enIntfSync, HI_U32* pu32W, HI_U32* pu
             *pu32Frm = 30;
             break;
         case VO_OUTPUT_USER    :
+			#ifdef HISPARK_LCD
+			*pu32W = 480;
+            *pu32H = 960;
+            *pu32Frm = 60;
+			#else
             *pu32W = 720;
             *pu32H = 576;
             *pu32Frm = 25;
+			#endif
             break;
         default:
             SAMPLE_PRT("vo enIntfSync %d not support!\n", enIntfSync);
@@ -400,21 +427,82 @@ HI_S32 SAMPLE_COMM_VO_GetWH(VO_INTF_SYNC_E enIntfSync, HI_U32* pu32W, HI_U32* pu
 HI_S32 SAMPLE_COMM_VO_StartDev(VO_DEV VoDev, VO_PUB_ATTR_S* pstPubAttr)
 {
     HI_S32 s32Ret = HI_SUCCESS;
+	
+	if(pstPubAttr->enIntfType == VO_INTF_MIPI)
+	{
+		VO_PUB_ATTR_S stPubAttrMIPI = {0};
+		VO_USER_INTFSYNC_INFO_S stUserInfoMIPI = {0};
+		#ifdef HISPARK_LCD
+		stPubAttrMIPI.u32BgColor = pstPubAttr->u32BgColor;
+		stPubAttrMIPI.enIntfSync = VO_OUTPUT_USER;
+		stPubAttrMIPI.enIntfType = VO_INTF_MIPI;
+		
+		stPubAttrMIPI.stSyncInfo.bSynm = 0;
+		stPubAttrMIPI.stSyncInfo.bIop = 1;
+		stPubAttrMIPI.stSyncInfo.u8Intfb = 0;
+		
+		stPubAttrMIPI.stSyncInfo.u16Vact = 960;
+		stPubAttrMIPI.stSyncInfo.u16Vbb = 16;
+		stPubAttrMIPI.stSyncInfo.u16Vfb = 16;
+		
+		stPubAttrMIPI.stSyncInfo.u16Hact = 480;
+		stPubAttrMIPI.stSyncInfo.u16Hbb = 30;
+		stPubAttrMIPI.stSyncInfo.u16Hfb = 20;
+		stPubAttrMIPI.stSyncInfo.u16Hmid = 1;
+		
+		stPubAttrMIPI.stSyncInfo.u16Bvact = 1;
+		stPubAttrMIPI.stSyncInfo.u16Bvbb = 1; 
+		stPubAttrMIPI.stSyncInfo.u16Bvfb = 1; 
+		
+		stPubAttrMIPI.stSyncInfo.u16Hpw = 10; 
+		stPubAttrMIPI.stSyncInfo.u16Vpw = 2;
+		
+		stPubAttrMIPI.stSyncInfo.bIdv = 1;
+		stPubAttrMIPI.stSyncInfo.bIhs = 1;
+		stPubAttrMIPI.stSyncInfo.bIvs = 1;	
+		
+		s32Ret = HI_MPI_VO_SetPubAttr(VoDev, &stPubAttrMIPI);
+		if (s32Ret != HI_SUCCESS)
+		{
+			SAMPLE_PRT("failed with %#x!\n", s32Ret);
+			return HI_FAILURE;
+		}
 
-    s32Ret = HI_MPI_VO_SetPubAttr(VoDev, pstPubAttr);
-    if (s32Ret != HI_SUCCESS)
-    {
-        SAMPLE_PRT("failed with %#x!\n", s32Ret);
-        return HI_FAILURE;
-    }
-
-    s32Ret = HI_MPI_VO_Enable(VoDev);
-    if (s32Ret != HI_SUCCESS)
-    {
-        SAMPLE_PRT("failed with %#x!\n", s32Ret);
-        return HI_FAILURE;
-    }
-
+		stUserInfoMIPI.stUserIntfSyncAttr.enClkSource = VO_CLK_SOURCE_LCDMCLK;
+		stUserInfoMIPI.stUserIntfSyncAttr.u32LcdMClkDiv = 0x3661B4;
+		
+		stUserInfoMIPI.u32PreDiv = 1;
+		stUserInfoMIPI.u32DevDiv = 1;
+		stUserInfoMIPI.bClkReverse = 1;
+	
+		s32Ret = HI_MPI_VO_SetUserIntfSyncInfo(VoDev, &stUserInfoMIPI);
+		if (s32Ret != HI_SUCCESS)
+		{
+			SAMPLE_PRT("failed with %#x!\n", s32Ret);
+			return HI_FAILURE;
+		}
+		#else
+		printf("UNKNOW MIPI LCD !\n");
+		s32Ret =  HI_FAILURE;
+		#endif
+	}
+	else
+	{
+		s32Ret = HI_MPI_VO_SetPubAttr(VoDev, pstPubAttr);
+		if (s32Ret != HI_SUCCESS)
+		{
+			SAMPLE_PRT("failed with %#x!\n", s32Ret);
+			return HI_FAILURE;
+		}
+	}
+	
+	s32Ret = HI_MPI_VO_Enable(VoDev);
+	if (s32Ret != HI_SUCCESS)
+	{
+		SAMPLE_PRT("failed with %#x!\n", s32Ret);
+		return HI_FAILURE;
+	}
+	
     return s32Ret;
 }
 
@@ -850,8 +938,13 @@ void SAMPLE_COMM_VO_StartMipiTx(VO_INTF_SYNC_E enVoIntfSync);
 */
 HI_S32 SAMPLE_COMM_VO_GetDefConfig(SAMPLE_VO_CONFIG_S *pstVoConfig)
 {
+#ifdef HISPARK_LCD
+	RECT_S	stDefDispRect  = {0, 0, 480, 960};
+	SIZE_S	stDefImageSize = {480, 960};
+#else
     RECT_S  stDefDispRect  = {0, 0, 1920, 1080};
     SIZE_S  stDefImageSize = {1920, 1080};
+#endif
     HI_U32  u32ChipId;
     if(NULL == pstVoConfig)
     {
@@ -885,9 +978,13 @@ HI_S32 SAMPLE_COMM_VO_GetDefConfig(SAMPLE_VO_CONFIG_S *pstVoConfig)
 }
 HI_S32 SAMPLE_COMM_VO_StartVO(SAMPLE_VO_CONFIG_S *pstVoConfig)
 {
-    RECT_S                 stDefDispRect  = {0, 0, 1920, 1080};
-    SIZE_S                 stDefImageSize = {1920, 1080};
-
+#ifdef HISPARK_LCD
+		RECT_S	stDefDispRect  = {0, 0, 480, 960};
+		SIZE_S	stDefImageSize = {480, 960};
+#else
+		RECT_S	stDefDispRect  = {0, 0, 1920, 1080};
+		SIZE_S	stDefImageSize = {1920, 1080};
+#endif
     /*******************************************
     * VO device VoDev# information declaration.
     ********************************************/
@@ -908,6 +1005,7 @@ HI_S32 SAMPLE_COMM_VO_StartVO(SAMPLE_VO_CONFIG_S *pstVoConfig)
         SAMPLE_PRT("Error:argument can not be NULL\n");
         return HI_FAILURE;
     }
+	
     VoDev          = pstVoConfig->VoDev;
     VoLayer        = pstVoConfig->VoDev;
     enVoMode       = pstVoConfig->enVoMode;
@@ -3805,6 +3903,461 @@ static HI_VOID SAMPLE_PRIVATE_VO_InitScreen720x1280(HI_S32 s32fd)
     usleep(10000);
 }
 
+/*
+* Name: SAMPLE_PRIVATE_VO_InitScreen480x960
+* Desc: Initialize the screen(480x960) through mipi_tx.
+*/
+static HI_VOID SAMPLE_PRIVATE_VO_InitScreen480x960(HI_S32 fd)
+{
+    HI_S32 s32Ret;
+    cmd_info_t cmd_info;
+    HI_U8      cmd[48];
+
+	//g_payLoad0
+    cmd[0] = 0xF0;
+    cmd[1] = 0x5A;
+    cmd[2] = 0x5A;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 0x3;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+
+	//g_payLoad1
+    cmd[0] = 0xF1;
+    cmd[1] = 0xA5;
+    cmd[2] = 0xA5;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 0x3;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad2
+    cmd[0] = 0xB3;
+    cmd[1] = 0x03;
+    cmd[2] = 0x03;
+    cmd[3] = 0x03;
+    cmd[4] = 0x07;
+    cmd[5] = 0x05;
+    cmd[6] = 0x0D;
+    cmd[7] = 0x0F;
+    cmd[8] = 0x11;
+    cmd[9] = 0x13;
+    cmd[10] = 0x09;
+    cmd[11] = 0x0B;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 12;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad3
+    cmd[0] = 0xB4;
+    cmd[1] = 0x03;
+    cmd[2] = 0x03;
+    cmd[3] = 0x03;
+    cmd[4] = 0x06;
+    cmd[5] = 0x04;
+    cmd[6] = 0x0C;
+    cmd[7] = 0x0E;
+    cmd[8] = 0x10;
+    cmd[9] = 0x12;
+    cmd[10] = 0x08;
+    cmd[11] = 0x0A;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 12;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad4
+    cmd[0] = 0xB0;
+    cmd[1] = 0x54;
+    cmd[2] = 0x32;
+    cmd[3] = 0x23;
+    cmd[4] = 0x45;
+    cmd[5] = 0x44;
+    cmd[6] = 0x44;
+    cmd[7] = 0x44;
+    cmd[8] = 0x44;
+    cmd[9] = 0x60;
+    cmd[10] = 0x00;
+    cmd[11] = 0x60;
+    cmd[12] = 0x1C;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 13;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad5
+    cmd[0] = 0xB1;
+    cmd[1] = 0x32;
+    cmd[2] = 0x84;
+    cmd[3] = 0x02;
+    cmd[4] = 0x87;
+    cmd[5] = 0x12;
+    cmd[6] = 0x00;
+    cmd[7] = 0x50;
+    cmd[8] = 0x1C;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 0x9;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad6
+    cmd[0] = 0xB2;
+    cmd[1] = 0x73;
+    cmd[2] = 0x09;
+    cmd[3] = 0x08;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 0x4;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad7
+    cmd[0] = 0xB6;
+    cmd[1] = 0x5C;
+    cmd[2] = 0x5C;
+    cmd[3] = 0x05;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 0x4;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad8
+    cmd[0] = 0xB8;
+    cmd[1] = 0x23;
+    cmd[2] = 0x41;
+    cmd[3] = 0x32;
+    cmd[4] = 0x30;
+    cmd[5] = 0x03;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 0x6;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad9
+    cmd[0] = 0xBC;
+    cmd[1] = 0xD2;
+    cmd[2] = 0x0E;
+    cmd[3] = 0x63;
+    cmd[4] = 0x63;
+    cmd[5] = 0x5A;
+    cmd[6] = 0x32;
+    cmd[7] = 0x22;
+    cmd[8] = 0x14;
+    cmd[9] = 0x22;
+    cmd[10] = 0x03;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 11;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad10
+    cmd_info.devno = 0;
+    cmd_info.cmd_size = 0x41B7;
+    cmd_info.data_type = 0x23;
+    cmd_info.cmd = NULL;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad11
+    cmd[0] = 0xC1;
+    cmd[1] = 0x0C;
+    cmd[2] = 0x10;
+    cmd[3] = 0x04;
+    cmd[4] = 0x0C;
+    cmd[5] = 0x10;
+    cmd[6] = 0x04;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 0x7;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad12
+    cmd[0] = 0xC2;
+    cmd[1] = 0x10;
+    cmd[2] = 0xE0;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 0x3;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad13
+    cmd[0] = 0xC3;
+    cmd[1] = 0x22;
+    cmd[2] = 0x11;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 0x3;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad14
+    cmd[0] = 0xD0;
+    cmd[1] = 0x07;
+    cmd[2] = 0xFF;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 0x3;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad15
+    cmd[0] = 0xD2;
+    cmd[1] = 0x63;
+    cmd[2] = 0x0B;
+    cmd[3] = 0x08;
+    cmd[4] = 0x88;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 0x5;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad16
+    cmd[0] = 0xC6;
+    cmd[1] = 0x08;
+    cmd[2] = 0x15;
+    cmd[3] = 0xFF;
+    cmd[4] = 0x10;
+    cmd[5] = 0x16;
+    cmd[6] = 0x80;
+    cmd[7] = 0x60;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 0x8;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad17
+    cmd_info.devno = 0;
+    cmd_info.cmd_size = 0x04C7;
+    cmd_info.data_type = 0x23;
+    cmd_info.cmd = NULL;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad18
+    cmd[0] = 0xC8;
+    cmd[1] = 0x7C;
+    cmd[2] = 0x50;
+    cmd[3] = 0x3B;
+    cmd[4] = 0x2C;
+    cmd[5] = 0x25;
+    cmd[6] = 0x16;
+    cmd[7] = 0x1C;
+    cmd[8] = 0x08;
+    cmd[9] = 0x27;
+    cmd[10] = 0x2B;
+    cmd[11] = 0x2F;
+    cmd[12] = 0x52;
+    cmd[13] = 0x43;
+	
+    cmd[14] = 0x4C;
+    cmd[15] = 0x40;
+	
+    cmd[16] = 0x3D;
+    cmd[17] = 0x30;
+    cmd[18] = 0x1E;
+    cmd[19] = 0x06;
+    cmd[20] = 0x7C;
+    cmd[21] = 0x50;
+    cmd[22] = 0x3B;
+    cmd[23] = 0x2C;
+    cmd[24] = 0x25;
+    cmd[25] = 0x16;
+    cmd[26] = 0x1C;
+    cmd[27] = 0x08;
+    cmd[28] = 0x27;
+    cmd[29] = 0x2B;
+	
+    cmd[30] = 0x2F;
+    cmd[31] = 0x52;
+	
+    cmd[32] = 0x43;
+    cmd[33] = 0x4C;
+    cmd[34] = 0x40;
+    cmd[35] = 0x3D;
+    cmd[36] = 0x30;
+    cmd[37] = 0x1E;
+    cmd[38] = 0x06;
+
+    cmd_info.devno     = 0;
+    cmd_info.cmd_size  = 39;
+    cmd_info.data_type = 0x29;
+    cmd_info.cmd       = cmd;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+	//g_payLoad19
+    cmd_info.devno = 0;
+    cmd_info.cmd_size = 0x11;
+    cmd_info.data_type = 0x05;
+    cmd_info.cmd = NULL;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+    usleep(120000);
+	
+	//g_payLoad20
+    cmd_info.devno = 0;
+    cmd_info.cmd_size = 0x29;
+    cmd_info.data_type = 0x05;
+    cmd_info.cmd = NULL;
+    s32Ret = ioctl(fd, HI_MIPI_TX_SET_CMD, &cmd_info);
+    if (HI_SUCCESS != s32Ret)
+    {
+        SAMPLE_PRT("MIPI_TX SET CMD failed\n");
+        close(fd);
+        return;
+    }
+	
+    usleep(120000);
+	
+}
+
 #if SAMPLE_VO_USE_DEFAULT_MIPI_TX
 
 /*
@@ -3829,10 +4382,15 @@ static void SAMPLE_PRIVATE_VO_InitMipiTxScreen(VO_INTF_SYNC_E enVoIntfSync, HI_S
     }
     else
     {
+		#ifdef HISPARK_LCD
+        SAMPLE_PRT("%s,%d,Init HISPARK_LCD screen.\n",__FUNCTION__,__LINE__);
+         SAMPLE_PRIVATE_VO_InitScreen480x960(fd);
+		#else
         SAMPLE_PRT("%s,%d,Init 1080p screen.\n",__FUNCTION__,__LINE__);
         // init screen for 1080x1920_60.
         SAMPLE_PRIVATE_VO_InitScreen1080x1920(fd);
         SAMPLE_PRT("%s,%d,There is no screen to init\n",__FUNCTION__,__LINE__);
+		#endif
     }
 }
 #else
@@ -3885,6 +4443,13 @@ void SAMPLE_COMM_VO_StartMipiTx(VO_INTF_SYNC_E enVoIntfSync)
             break;
         case VO_OUTPUT_1080x1920_60:
             pstMipiTxConfig = &MIPI_TX_1080X1920_60_CONFIG;
+            break;
+        case VO_OUTPUT_USER:
+			#ifdef HISPARK_LCD
+            pstMipiTxConfig = &MIPI_TX_480X960_60_CONFIG;
+			#else
+            pstMipiTxConfig = &MIPI_TX_1080X1920_60_CONFIG;
+			#endif
             break;
         default :
             pstMipiTxConfig = &MIPI_TX_1080X1920_60_CONFIG;

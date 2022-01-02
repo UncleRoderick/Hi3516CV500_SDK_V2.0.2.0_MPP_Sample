@@ -1354,7 +1354,7 @@ HI_S32 SAMPLE_VIO_ViVpssLowDelay(HI_U32 u32VoIntfType)
     }
 
 
-    stLDCAttr.bEnable = HI_TRUE;
+    stLDCAttr.bEnable = HI_FALSE;
     stLDCAttr.stAttr.bAspect = 0;
     stLDCAttr.stAttr.s32XRatio = 100;
     stLDCAttr.stAttr.s32YRatio = 100;
@@ -2636,11 +2636,10 @@ HI_S32 SAMPLE_VIO_VPSS_VO_MIPI_TX(HI_U32 u32VoIntfType)
 
     /*config vo*/
     SAMPLE_COMM_VO_GetDefConfig(&stVoConfig);
+	
     stVoConfig.enDstDynamicRange = enDynamicRange;
-
     stVoConfig.enVoIntfType = VO_INTF_MIPI;
-    stVoConfig.enIntfSync = VO_OUTPUT_1080x1920_60;
-
+    stVoConfig.enIntfSync = VO_OUTPUT_USER;
     stVoConfig.enPicSize = enPicSize;
 
     /*start vo*/

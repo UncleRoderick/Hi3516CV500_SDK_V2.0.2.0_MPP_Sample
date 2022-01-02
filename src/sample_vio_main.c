@@ -34,8 +34,14 @@ extern "C" {
 
 #include "lv_drivers/indev/mouse.h"
 
+#ifdef HISPARK_LCD
+#define WIDTH			480
+#define HEIGHT			960
+#else
 #define WIDTH			1920
 #define HEIGHT			1080
+#endif
+
 #define DISP_BUF_SIZE 	(128 * 1024)
 
 /******************************************************************************
@@ -95,6 +101,11 @@ HI_S32 SAMPLE_HIFB_LVGL(HI_VOID)
     stVoDevInfo.u32DisBufLen      = 3;
     stVoDevInfo.enDstDynamicRange = DYNAMIC_RANGE_SDR8;
 	stVoDevInfo.enVoMode          = VO_MODE_1MUX;
+	
+#ifdef HISPARK_LCD
+	stVoDevInfo.enVoIntfType = VO_INTF_MIPI;
+	stVoDevInfo.enIntfSync		  = VO_OUTPUT_USER;
+#endif
 
     /******************************************
      step  1: init variable
